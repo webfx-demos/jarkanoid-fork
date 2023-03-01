@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- File managed by WebFX (DO NOT EDIT MANUALLY) -->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>dev.webfx</groupId>
+        <artifactId>webfx-parent</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>webfx-demo-jarkanoid</artifactId>
+
+    <repositories>
+
+        <!-- For WebFX snapshots download (including webfx-parent) -->
+        <repository>
+            <id>webfx-snapshots</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+
+    </repositories>
+
+    <packaging>pom</packaging>
+
+    <modules>
+        <module>webfx-demo-jarkanoid-application</module>
+        <module>webfx-demo-jarkanoid-application-gluon</module>
+        <module>webfx-demo-jarkanoid-application-gwt</module>
+        <module>webfx-demo-jarkanoid-application-openjfx</module>
+    </modules>
+
+</project>

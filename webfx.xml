@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project>
+
+    <parent name="webfx-parent"/>
+
+    <modules>
+        <subdirectories-modules/>
+    </modules>
+
+    <required-libraries>
+        <webfx-library artifact="dev.webfx:webfx:0.1.0-SNAPSHOT"/>
+    </required-libraries>
+
+<!--
+    <maven-pom-manual>
+        <properties>
+            <java.version>17</java.version>
+        </properties>
+    </maven-pom-manual>
+-->
+
+
+</project>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project applicationId="dev.webfx.demo.jarkanoid" applicationLabel="JArkanoid">
+
+    <exported-packages>
+        <source-packages/>
+        <resource-package>eu.hansolo.fx.jarkanoid</resource-package>
+    </exported-packages>
+
+    <dependencies>
+        <used-by-source-modules/>
+    </dependencies>
+
+    <providers>
+        <provider interface="javafx.application.Application">eu.hansolo.fx.jarkanoid.Main</provider>
+    </providers>
+
+    <required-libraries>
+        <webfx-library artifact="dev.webfx:webfx-extras:0.1.0-SNAPSHOT"/>
+    </required-libraries>
+
+</project>
