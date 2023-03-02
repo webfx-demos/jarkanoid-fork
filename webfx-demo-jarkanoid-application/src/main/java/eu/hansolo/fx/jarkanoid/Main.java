@@ -20,6 +20,8 @@ import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
@@ -350,7 +352,7 @@ public class Main extends Application {
         mouseHandler = e -> {
             EventType<MouseEvent> type = (EventType<MouseEvent>) e.getEventType();
             if (MouseEvent.MOUSE_DRAGGED.equals(type)) {
-                double x = e.getSceneX() - paddleState.width * 0.5;
+                double x = e.getX() - paddleState.width * 0.5;
                 if (x + paddleState.width > WIDTH - INSET) {
                     if (nextLevelDoorOpen && !movingPaddleOut) { movingPaddleOut = true; }
                     x = WIDTH - INSET - paddleState.width;
@@ -439,6 +441,8 @@ public class Main extends Application {
                 case LEFT: stopPaddle();
             }
         });
+        // Making mouse clicks doing the same as pressing space bar
+        scene.setOnMouseClicked(e -> scene.getOnKeyPressed().handle(new KeyEvent(KeyEvent.KEY_PRESSED, " ", " ", KeyCode.SPACE, e.isShiftDown(), e.isControlDown(), e.isAltDown(), e.isMetaDown())));
 
         stage.setTitle("JArkanoid");
         stage.setScene(scene);
