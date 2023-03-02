@@ -517,7 +517,7 @@ public class Main extends Application {
     }
 
     private void loadSounds() {
-        gameStartSnd     = loadSound(Resource.toUrl("game_start.mp3", getClass()));
+        gameStartSnd     = loadMusic(Resource.toUrl("game_start.mp3", getClass())); // Music because too long to load in memory on Android
         startLevelSnd    = loadSound(Resource.toUrl("level_ready.mp3", getClass()));
         ballPaddleSnd    = loadSound(Resource.toUrl("ball_paddle.mp3", getClass()));
         ballBlockSnd     = loadSound(Resource.toUrl("ball_block.mp3", getClass()));
@@ -525,6 +525,10 @@ public class Main extends Application {
         laserSnd         = loadSound(Resource.toUrl("gun.mp3", getClass()));
         explosionSnd     = loadSound(Resource.toUrl("explosion.mp3", getClass()));
         gameOverSnd      = loadSound(Resource.toUrl("game_over.mp3", getClass()));
+    }
+
+    private Audio loadMusic(String url) {
+        return AudioService.loadMusic(url);
     }
 
     private Audio loadSound(String url) {
