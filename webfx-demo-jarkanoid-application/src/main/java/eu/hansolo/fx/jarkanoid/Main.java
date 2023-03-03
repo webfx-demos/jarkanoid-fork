@@ -359,10 +359,10 @@ public class Main extends Application {
         // Attach mouse dragging to paddle
         mouseHandler = e -> {
             EventType<MouseEvent> type = (EventType<MouseEvent>) e.getEventType();
-            if (MouseEvent.MOUSE_DRAGGED.equals(type)) {
+            if (MouseEvent.MOUSE_DRAGGED.equals(type) && !movingPaddleOut) { // Player can't control the paddle anymore while moving out
                 double x = e.getX() - paddleState.width * 0.5;
                 if (x + paddleState.width > WIDTH - INSET) {
-                    if (nextLevelDoorOpen && !movingPaddleOut) { movingPaddleOut = true; }
+                    if (nextLevelDoorOpen) { movingPaddleOut = true; }
                     x = WIDTH - INSET - paddleState.width;
                 }
                 if (x < INSET) { x = INSET; }
@@ -1301,6 +1301,11 @@ public class Main extends Application {
                 this.x = paddle.bounds.centerX;
                 this.y = paddle.bounds.minY - image.getHeight() * 0.5 - BALL_SPEED - 1;
             } else { // We need to check if the ball hits a block
+                // Normalising the ball speed to consider a possible change in ballSpeed value (ex: bonus S)
+                double oldSpeed = Math.sqrt(vX * vX + vY * vY);
+                vX *= ballSpeed / oldSpeed;
+                vY *= ballSpeed / oldSpeed;
+
                 double x0 = x;       // (x0, y0) = initial coordinates, (x1, y1) = final coordinates in case there is no hit
                 double y0 = y;
                 double x1 = x0 + vX;
@@ -1312,8 +1317,8 @@ public class Main extends Application {
                     double fy0 = y0;
                     double fx1 = x1;
                     double fy1 = y1;
-                    BallHit ballHit = Stream.concat(blocks.stream().map(b -> b.bounds),                              // Iterating over all block bounds
-                                    Stream.concat(enemies.stream().map(b -> b.bounds),
+                    BallHit ballHit = Stream.concat(blocks.stream().filter(b -> !b.toBeRemoved).map(b -> b.bounds),                              // Iterating over all block bounds
+                                    Stream.concat(enemies.stream().filter(b -> !b.toBeRemoved).map(b -> b.bounds),
                                     Stream.concat(Arrays.stream(BORDER_BOUNDS), Stream.of(paddle.bounds))))          // together with the borders and paddle bounds (processed identically)
                             .map(bounds -> bounds.computeBallHit(fx0, fy0, fx1, fy1, radius))        // computing a possible ball hit with the bounds (returns null if no hits)
                             .filter(Objects::nonNull)                                                // removing non-hits
@@ -1335,30 +1340,34 @@ public class Main extends Application {
                     x1 = ballHit.correctedX;
                     y1 = ballHit.correctedY;
                     // But before looping, we manage some special case when hitting ennemies, the paddle or the blocks
+                    // Enemy management (explosion & removal):
                     Enemy hitEnemy = enemies.stream().filter(b -> b.bounds == ballHit.hitBounds).findFirst().orElse(null);
-                    if (hitEnemy != null) {
+                    if (hitEnemy != null) { // The hit was with an enemy
                         hitEnemy.toBeRemoved = true;
                         explosions.add(new Explosion(hitEnemy.x, hitEnemy.y, hitEnemy.vX, hitEnemy.vY, 1.0));
                         playSound(explosionSnd);
                     }
-                    if (ballHit.hitBounds == paddle.bounds) {
+                    // Paddle management (sticky mode, paddle speed influence, ball angle correction with round corners):
+                    if (ballHit.hitBounds == paddle.bounds) { // The hit was with the paddle
                         Bounds pb = paddle.bounds;
                         if (stickyPaddle) {
                             this.x      = pb.centerX;
                             this.y      = pb.minY - image.getHeight() * 0.5 - BALL_SPEED - 1;
                             this.active = false;
-                            break;
+                            break; // This is the final ball position, so we exit the loop
                         } else {
+                            playSound(ballPaddleSnd); // Playing the sound at this point because we may break the loop
                             // Influence vX of ball if vX of paddle != 0
-                            if (paddle.vX != 0) {
+                            if (paddle.vX != 0 || mousePaddleVx != 0) {
                                 double speedXY = Math.sqrt(vX * vX + vY * vY);
                                 double posX    = (x1 - pb.centerX) / (pb.width * 0.5);
                                 double speedX  = speedXY * posX * BALL_VX_INFLUENCE;
                                 vX = speedX;
                                 vY = - Math.sqrt(speedXY * speedXY - speedX * speedX);
-                                // Recalculating (x1, y1) from this new speed
-                                x1 = x0 + vX;
-                                y1 = y0 + vY;
+                                // Repositioning the ball according to this new speed
+                                this.x = x0 + vX;
+                                this.y = y0 + vY;
+                                break; // This is the final position, so we exit the loop
                             } else { // angle correction due to paddle round corners
                                 double pcr = pb.height;                     // paddle corner radius
                                 boolean hitLeftCorner = x0 < pb.minX + pcr; // Note: x0 is the hit X at this point
@@ -1373,20 +1382,20 @@ public class Main extends Application {
                                     // Keeping the hit speed if to closed to 90U+00b0
                                     if (cornerAngleRad < maxRad) {
                                         // Applying the new speed angle
-                                        vY = BALL_SPEED * Math.sin(cornerAngleRad) * (y0 > pb.centerY ? 1 : -1); // Not inverting vY if the hit is too low (-> user will lose the ball, sorry)
-                                        vX = BALL_SPEED * Math.cos(cornerAngleRad) * (hitLeftCorner ? -1 : 1);
-                                        // Recalculating (x1, y1) from this new speed
-                                        x1 = x0 + vX;
-                                        y1 = y0 + vY;
+                                        vY = ballSpeed * Math.sin(cornerAngleRad) * (y0 > pb.centerY ? 1 : -1); // Not inverting vY if the hit is too low (-> user will lose the ball, sorry)
+                                        vX = ballSpeed * Math.cos(cornerAngleRad) * (hitLeftCorner ? -1 : 1);
+                                        // Repositioning the ball according to this new speed
+                                        this.x = x0 + vX;
+                                        this.y = y0 + vY;
+                                        break; // This is the final position, so we exit the loop (also this prevents infinite loop in rare cases)
                                     }
                                 }
                             }
                         }
-                        playSound(ballPaddleSnd);
                     }
-                    // We retrieve the block hit by the ball for the hit sound, block blink & score management:
+                    // Block management (blink, hit counts & removal, score):
                     Block hitBlock = blocks.stream().filter(b -> b.bounds == ballHit.hitBounds).findFirst().orElse(null);
-                    if (hitBlock != null) { // Can be null if the ball hit something else (paddle or border)
+                    if (hitBlock != null) { // The hit was with a block
                         switch (hitBlock.blockType) {
                             case GOLD: {
                                 playSound(ballHardBlockSnd);
@@ -1444,7 +1453,7 @@ public class Main extends Application {
 
             if (Double.compare(vX, 0) == 0) { vX = 0.5; }
 
-            if (this.bounds.maxY > HEIGHT) {
+            if (this.bounds.maxY > HEIGHT || !Double.isFinite(this.bounds.maxY)) { // may happen sometimes that y computation returns NaN or Infinite
                 this.toBeRemoved = true;
             }
         }
@@ -1651,9 +1660,11 @@ public class Main extends Application {
         }
 
         private BallHit computeBallHit(double x0, double y0, double x1, double y1, double r) {
+            if (x0 == x1 && y0 == y1) // We can't determine a hit if the ball is not moving
+                return null;
             // Increased +r bounds to simplify computation and focus only on ball center
             double minXr = minX - r, minYr = minY - r, maxXr = maxX + r, maxYr = maxY + r;
-            double yHit = 0, xHit = 0;
+            double xHit = 0, yHit = 0;
             boolean hit = false, inverseVy = false, inverseVx = false;
             // Did the ball hit the bottom border?
             if (y0 >= maxYr && y1 <= maxYr) { // Means that the ball crossed the bottom line (while moving up)
@@ -1691,14 +1702,34 @@ public class Main extends Application {
                     inverseVx = true;
                 }
             }
-            // If not, is the whole trajectory inside the bounds? (this may happen with moving bounds such as paddle & ennemies)
-            if (!hit && contains(x0, y0) && contains(x1, y1)) {
-                hit = true;
-                yHit = y0 > y1 /* ball is moving up */ ? maxYr : minYr; // hitting the bounds bottom if ball is moving up, or top if ball is moving down
-                xHit = computeLineIntersectionX(-1, yHit, 1, yHit, x0, y0, x1, y1); // Where on X?
-                xHit = Math.max(minXr, Math.min(maxXr, xHit));
-                x1 = xHit; y1 = yHit;
-                inverseVy = true;
+            // If not, is the whole trajectory inside the bounds? (may happen with moving bounds such as paddle & ennemies)
+            if (!hit && x0 >= minXr && x0 <= maxXr && y0 >= minYr && y0 <= maxYr
+                     && x1 >= minXr && x1 <= maxXr && y1 >= minYr && y1 <= maxYr) {
+                hit = true; // Definitely hit that bounds since it is inside
+                // To determine what border has been hit, we will consider the distance between the ball and each border
+                double distanceToLeft = Math.min(x0 - minXr, x1 - minXr);
+                double distanceToRight = Math.min(maxXr - x0,  maxXr -x1);
+                double distanceToTop = Math.min(y0 - minXr, y1 - minYr);
+                double distanceToBottom = Math.min(maxYr - y0, maxYr - y1);
+                // The minimal distance will determine the hit border
+                double distanceMin = Math.min(distanceToLeft, Math.min(distanceToRight, Math.min(distanceToTop, distanceToBottom)));
+                if (distanceMin == distanceToBottom) { // Bottom border hit
+                    xHit = y0 > y1 ? x0 : x1; // taking x from trajectory close to bottom (no extrapolation - should be ok)
+                    yHit = maxYr; // bottom line
+                    inverseVy = y1 < y0; // inverse Vy if the trajectory was going up
+                } else if (distanceMin == distanceToTop) { // Top border hit
+                    xHit = y0 < y1 ? x0 : x1; // taking x from trajectory close to top (no extrapolation - should be ok)
+                    yHit = minYr; // top line
+                    inverseVy = y1 > y0; // inverse Vy if the trajectory was going down
+                } else if (distanceMin == distanceToLeft) { // Left border hit
+                    xHit = minXr; // left line
+                    yHit = x0 < x1 ? y0 : y1; // taking y from trajectory close to left (no extrapolation - should be ok)
+                    inverseVx = x1 > x0; // inverse Vx if the trajectory was going towards right
+                } else { // Right border hit
+                    xHit = maxXr; // right border
+                    yHit = x0 > x1 ? y0 : y1; // taking y from trajectory close to right (no extrapolation - should be ok)
+                    inverseVx = x1 < x0; // inverse Vx if the trajectory was going towards right
+                }
             }
             if (!hit)
                 return null;
@@ -1708,9 +1739,8 @@ public class Main extends Application {
             ballHit.inverseVx = inverseVx;
             ballHit.inverseVy = inverseVy;
             ballHit.beforeHitDistance = distance(x0, y0, xHit, yHit);
-            double afterHitDistance = distance(xHit, yHit, x1, y1);
-            ballHit.correctedX = inverseVx ? xHit - (x1 - xHit) * afterHitDistance : x1;
-            ballHit.correctedY = inverseVy ? yHit - (y1 - yHit) * afterHitDistance : y1;
+            ballHit.correctedX = inverseVx ? xHit - (x1 - xHit) : x1;
+            ballHit.correctedY = inverseVy ? yHit - (y1 - yHit) : y1;
             return ballHit;
         }
     }
