@@ -74,7 +74,7 @@ public class Main extends Application {
     private static final double      PADDLE_OFFSET_Y      = 68;
     private static final double      PADDLE_SPEED         = 8;
     private static final double      TORPEDO_SPEED        = 12;
-    private static final double      BALL_SPEED           = clamp(0.1, 10, PropertyManager.INSTANCE.getDouble(Constants.BALL_SPEED_KEY, 6));
+    private static final double      BALL_SPEED           = 6; // clamp(0.1, 10, PropertyManager.INSTANCE.getDouble(Constants.BALL_SPEED_KEY, 6));
     private static final double      BONUS_BLOCK_SPEED    = clamp(0.1, 5, PropertyManager.INSTANCE.getDouble(Constants.BONUS_BLOCK_SPEED_KEY, 3));
     private static final double      ENEMY_SPEED          = clamp(0.1, 5, PropertyManager.INSTANCE.getDouble(Constants.ENEMY_SPEED_KEY, 3));
     private static final double      BLOCK_WIDTH          = 38;
