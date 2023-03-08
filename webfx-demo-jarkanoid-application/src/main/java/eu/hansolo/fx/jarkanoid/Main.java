@@ -450,8 +450,12 @@ public class Main extends Application {
                 case LEFT: stopPaddle();
             }
         });
-        // Making mouse pressed doing the same as pressing space bar
-        scene.setOnMousePressed(e -> scene.getOnKeyPressed().handle(new KeyEvent(KeyEvent.KEY_PRESSED, " ", " ", KeyCode.SPACE, e.isShiftDown(), e.isControlDown(), e.isAltDown(), e.isMetaDown())));
+        // Making mouse released doing the same as pressing space bar (makes more sense on release as the mouse players are dragging the paddle)
+        scene.setOnMouseReleased(e -> {
+            // Skipping for 2s after the start of a new level (releasing the mouse won't launch the ball) => to give the mouse players the possibility to have a break
+            if (levelStartTime == 0 || Instant.now().getEpochSecond() >= levelStartTime + 2)
+                scene.getOnKeyPressed().handle(new KeyEvent(KeyEvent.KEY_PRESSED, " ", " ", KeyCode.SPACE, e.isShiftDown(), e.isControlDown(), e.isAltDown(), e.isMetaDown()));
+        });
 
         stage.setTitle("JArkanoid");
         stage.setScene(scene);
