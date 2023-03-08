@@ -729,6 +729,7 @@ public class Main extends Application {
                 }
                 for (Enemy enemy : enemies) {
                     if (enemy.bounds.intersects(torpedo.bounds)) {
+                        score += 100;
                         enemy.toBeRemoved   = true;
                         torpedo.toBeRemoved = true;
                         explosions.add(new Explosion(enemy.x, enemy.y, enemy.vX, enemy.vY, 1.0));
@@ -1343,6 +1344,7 @@ public class Main extends Application {
                     // Enemy management (explosion & removal):
                     Enemy hitEnemy = enemies.stream().filter(b -> b.bounds == ballHit.hitBounds).findFirst().orElse(null);
                     if (hitEnemy != null) { // The hit was with an enemy
+                        score += 100;
                         hitEnemy.toBeRemoved = true;
                         explosions.add(new Explosion(hitEnemy.x, hitEnemy.y, hitEnemy.vX, hitEnemy.vY, 1.0));
                         playSound(explosionSnd);
