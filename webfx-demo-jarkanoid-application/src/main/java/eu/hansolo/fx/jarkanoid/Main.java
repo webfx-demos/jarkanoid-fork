@@ -16,6 +16,7 @@ import javafx.event.EventHandler;
 import javafx.event.EventType;
 import javafx.geometry.Pos;
 import javafx.geometry.VPos;
+import javafx.scene.Cursor;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -359,6 +360,7 @@ public class Main extends Application {
         // Attach mouse dragging to paddle
         mouseHandler = e -> {
             EventType<MouseEvent> type = (EventType<MouseEvent>) e.getEventType();
+            canvas.setCursor(running && e.getY() > HEIGHT * 0.8 ? Cursor.HAND : Cursor.DEFAULT);
             if (MouseEvent.MOUSE_DRAGGED.equals(type) && !movingPaddleOut) { // Player can't control the paddle anymore while moving out
                 double x = e.getX() - paddleState.width * 0.5;
                 if (x + paddleState.width > WIDTH - INSET) {
@@ -452,8 +454,8 @@ public class Main extends Application {
         });
         // Making mouse released doing the same as pressing space bar (makes more sense on release as the mouse players are dragging the paddle)
         scene.setOnMouseReleased(e -> {
-            // Skipping for 2s after the start of a new level (releasing the mouse won't launch the ball) => to give the mouse players the possibility to have a break
-            if (levelStartTime == 0 || Instant.now().getEpochSecond() >= levelStartTime + 2)
+            // Skipping for 3s after the start of a new level (releasing the mouse won't launch the ball) => to give the mouse players the possibility to have a break
+            if (Instant.now().getEpochSecond() >= levelStartTime + 3)
                 scene.getOnKeyPressed().handle(new KeyEvent(KeyEvent.KEY_PRESSED, " ", " ", KeyCode.SPACE, e.isShiftDown(), e.isControlDown(), e.isAltDown(), e.isMetaDown()));
         });
 
