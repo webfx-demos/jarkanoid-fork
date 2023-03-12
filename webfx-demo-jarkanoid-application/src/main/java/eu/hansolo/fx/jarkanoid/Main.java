@@ -21,9 +21,7 @@ import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
-import javafx.scene.input.MouseEvent;
+import javafx.scene.input.*;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.ImagePattern;
@@ -105,6 +103,8 @@ public class Main extends Application {
 
     private Instant                  gameStartTime;
     private long                     levelStartTime;
+    private long                     ballLostTime;
+    private long                     gameOverTime;
     private boolean                  running;
     private AnimationTimer           timer;
     private long                     lastTimerCall;
@@ -454,8 +454,8 @@ public class Main extends Application {
         });
         // Making mouse released doing the same as pressing space bar (makes more sense on release as the mouse players are dragging the paddle)
         scene.setOnMouseReleased(e -> {
-            // Skipping for 3s after the start of a new level (releasing the mouse won't launch the ball) => to give the mouse players the possibility to have a break
-            if (Instant.now().getEpochSecond() >= levelStartTime + 3)
+            // But skipping hot moments to give the mouse players more time to (not accidentally) launch the ball, or have a break
+            if (Instant.now().getEpochSecond() >= Math.max(levelStartTime + 3, Math.max(ballLostTime + 2, gameOverTime + 4)))
                 scene.getOnKeyPressed().handle(new KeyEvent(KeyEvent.KEY_PRESSED, " ", " ", KeyCode.SPACE, e.isShiftDown(), e.isControlDown(), e.isAltDown(), e.isMetaDown()));
         });
 
@@ -533,13 +533,13 @@ public class Main extends Application {
 
     private void loadSounds() {
         gameStartSnd     = loadMusic(Resource.toUrl("game_start.mp3", getClass())); // Music because too long to load in memory on Android
-        startLevelSnd    = loadSound(Resource.toUrl("level_ready.mp3", getClass()));
+        startLevelSnd    = loadMusic(Resource.toUrl("level_ready.mp3", getClass()));
         ballPaddleSnd    = loadSound(Resource.toUrl("ball_paddle.mp3", getClass()));
         ballBlockSnd     = loadSound(Resource.toUrl("ball_block.mp3", getClass()));
         ballHardBlockSnd = loadSound(Resource.toUrl("ball_hard_block.mp3", getClass()));
         laserSnd         = loadSound(Resource.toUrl("gun.mp3", getClass()));
         explosionSnd     = loadSound(Resource.toUrl("explosion.mp3", getClass()));
-        gameOverSnd      = loadSound(Resource.toUrl("game_over.mp3", getClass()));
+        gameOverSnd      = loadMusic(Resource.toUrl("game_over.mp3", getClass()));
     }
 
     private Audio loadMusic(String url) {
@@ -669,6 +669,7 @@ public class Main extends Application {
     private void gameOver() {
         schedule(() -> startScreen(), 5, TimeUnit.SECONDS);
 
+        gameOverTime = Instant.now().getEpochSecond();
         playSound(gameOverSnd);
 
         running = false;
@@ -1463,6 +1464,7 @@ public class Main extends Application {
 
             if (this.bounds.maxY > HEIGHT || !Double.isFinite(this.bounds.maxY)) { // may happen sometimes that y computation returns NaN or Infinite
                 this.toBeRemoved = true;
+                ballLostTime     = Instant.now().getEpochSecond();
             }
         }
     }
