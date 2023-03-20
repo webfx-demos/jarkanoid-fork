@@ -14,8 +14,4 @@
         <provider interface="javafx.application.Application">eu.hansolo.fx.jarkanoid.Main</provider>
     </providers>
 
-    <required-libraries>
-        <webfx-library artifact="dev.webfx:webfx-extras:0.1.0-SNAPSHOT"/>
-    </required-libraries>
-
 </project>
