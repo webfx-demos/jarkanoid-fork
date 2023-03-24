@@ -8,7 +8,7 @@
     <set-property name="gwt.logging.logLevel" value="FINEST"/>
     <set-property name="gwt.logging.consoleHandler" value="ENABLED"/>
 
-    <!-- Speeding up GWT compilation time in development mode -->
+    <!-- Speeding up GWT compilation and execution times -->
     <!--===========================< webfx-kit-javafxbase-emul >============================-->
     <source path="com/sun/javafx"/>
     <source path="com/sun/javafx/binding"/>
@@ -182,8 +182,9 @@
     <!--=======================< webfx-platform-windowlocation-gwt >========================-->
     <source path="dev/webfx/platform/windowlocation/spi/impl/gwt"/>
     <source path="dev/webfx/platform/windowlocation/spi/impl/gwt/jsinterop"/>
-    <set-property name="user.agent" value="safari"/> <!-- to make only 1 permutation for testing with Chrome -->
-    <set-property name="jre.checks.checkLevel" value="MINIMAL"/>
+    <set-property name="user.agent" value="safari"/> <!-- to speed up GWT compilation - this single permutation is now working ok in all modern browsers -->
+    <set-configuration-property name="user.agent.runtimeWarning" value="false"/> <!-- removing irrelevant warning in other browsers -->
+    <set-property name="jre.checks.checkLevel" value="MINIMAL"/> <!-- to speed up execution time -->
 
     <!-- Specify the app entry point class. -->
     <entry-point class="dev.webfx.platform.boot.spi.impl.gwt.GwtApplicationBooterProvider"/>

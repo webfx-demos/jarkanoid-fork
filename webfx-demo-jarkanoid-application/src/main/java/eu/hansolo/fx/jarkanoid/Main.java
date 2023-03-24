@@ -21,7 +21,9 @@ import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
-import javafx.scene.input.*;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.ImagePattern;
@@ -1284,6 +1286,7 @@ public class Main extends Application {
     private class Ball extends Sprite {
         public boolean active;
         public long    bornTimestamp;
+        private long   lastUpdateNano;
 
 
         // ******************** Constructors **************************************
@@ -1308,16 +1311,26 @@ public class Main extends Application {
             if (!active) {
                 this.x = paddle.bounds.centerX;
                 this.y = paddle.bounds.minY - image.getHeight() * 0.5 - BALL_SPEED - 1;
-            } else { // We need to check if the ball hits a block
+                lastUpdateNano = 0;
+            } else { // We need to check if the ball hits a block, an enemy, a border, or the paddle
                 // Normalising the ball speed to consider a possible change in ballSpeed value (ex: bonus S)
                 double oldSpeed = Math.sqrt(vX * vX + vY * vY);
                 vX *= ballSpeed / oldSpeed;
                 vY *= ballSpeed / oldSpeed;
 
-                double x0 = x;       // (x0, y0) = initial coordinates, (x1, y1) = final coordinates in case there is no hit
+                // Also applying a frame rate normalising factor, because the ball speed is assuming a 60 FPS rate.
+                // This may not always be the case, especially in the browser when returning from other tabs.
+                // This normalising factor will make the real ball speed experienced by the player match ballSpeed.
+                long now = System.nanoTime();
+                double frameRateNormalisingFactor = lastUpdateNano == 0 ? 1d : 1d / 16_000_000 * (now - lastUpdateNano);
+                lastUpdateNano = now;
+
+                // (x0, y0) = initial coordinates, (x1, y1) = final coordinates in case there is no hit
+                double x0 = x;
                 double y0 = y;
-                double x1 = x0 + vX;
-                double y1 = y0 + vY; // (x1, y1) may need a correction if the ball hits a block
+                // (x1, y1) may need a correction if the ball hits a block
+                double x1 = x0 + vX * frameRateNormalisingFactor;
+                double y1 = y0 + vY * frameRateNormalisingFactor;
 
                 while (true) { // Several iterations are possible, because even the corrected (x1, y1) might hit another block
                     // Capturing final values for the lambda expression below
@@ -1325,12 +1338,12 @@ public class Main extends Application {
                     double fy0 = y0;
                     double fx1 = x1;
                     double fy1 = y1;
-                    BallHit ballHit = Stream.concat(blocks.stream().filter(b -> !b.toBeRemoved).map(b -> b.bounds),                              // Iterating over all block bounds
-                                    Stream.concat(enemies.stream().filter(b -> !b.toBeRemoved).map(b -> b.bounds),
+                    BallHit ballHit = Stream.concat(blocks.stream().filter(b -> !b.toBeRemoved).map(b -> b.bounds),  // Iterating over all block bounds
+                                    Stream.concat(enemies.stream().filter(b -> !b.toBeRemoved).map(b -> b.bounds),   // and all enemies
                                     Stream.concat(Arrays.stream(BORDER_BOUNDS), Stream.of(paddle.bounds))))          // together with the borders and paddle bounds (processed identically)
                             .map(bounds -> bounds.computeBallHit(fx0, fy0, fx1, fy1, radius))        // computing a possible ball hit with the bounds (returns null if no hits)
                             .filter(Objects::nonNull)                                                // removing non-hits
-                            // If that trajectory (x0, y0) -> (x1, y1) hits several blocks, we keep the first hit block
+                            // If that trajectory (x0, y0) -> (x1, y1) hits several blocks, we take the first hit block
                             .min(Comparator.comparingDouble(ballHit1 -> ballHit1.beforeHitDistance)) // first hit = min hit distance (x0, y0) -> (xHit, yHit)
                             .orElse(null);                                                     // returning null if no hit
                     if (ballHit == null) { // If there is no hit, (x1, y1) doesn't need correction
@@ -1374,8 +1387,8 @@ public class Main extends Application {
                                 vX = speedX;
                                 vY = - Math.sqrt(speedXY * speedXY - speedX * speedX);
                                 // Repositioning the ball according to this new speed
-                                this.x = x0 + vX;
-                                this.y = y0 + vY;
+                                this.x = x0 + vX * frameRateNormalisingFactor;
+                                this.y = y0 + vY * frameRateNormalisingFactor;
                                 break; // This is the final position, so we exit the loop
                             } else { // angle correction due to paddle round corners
                                 double pcr = pb.height;                     // paddle corner radius
@@ -1394,8 +1407,8 @@ public class Main extends Application {
                                         vY = ballSpeed * Math.sin(cornerAngleRad) * (y0 > pb.centerY ? 1 : -1); // Not inverting vY if the hit is too low (-> user will lose the ball, sorry)
                                         vX = ballSpeed * Math.cos(cornerAngleRad) * (hitLeftCorner ? -1 : 1);
                                         // Repositioning the ball according to this new speed
-                                        this.x = x0 + vX;
-                                        this.y = y0 + vY;
+                                        this.x = x0 + vX * frameRateNormalisingFactor;
+                                        this.y = y0 + vY * frameRateNormalisingFactor;
                                         break; // This is the final position, so we exit the loop (also this prevents infinite loop in rare cases)
                                     }
                                 }
