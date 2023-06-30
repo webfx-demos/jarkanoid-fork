@@ -12,7 +12,6 @@ public class ServiceLoader<S> implements Iterable<S> {
             case "dev.webfx.kit.launcher.spi.WebFxKitLauncherProvider": return new ServiceLoader<S>(dev.webfx.kit.launcher.spi.impl.gwt.GwtWebFxKitLauncherProvider::new);
             case "dev.webfx.kit.mapper.peers.javafxmedia.spi.WebFxKitMediaMapperProvider": return new ServiceLoader<S>(dev.webfx.kit.mapper.peers.javafxmedia.spi.gwt.GwtWebFxKitMediaMapperProvider::new);
             case "dev.webfx.kit.mapper.spi.WebFxKitMapperProvider": return new ServiceLoader<S>(dev.webfx.kit.mapper.spi.impl.gwt.GwtWebFxKitHtmlMapperProvider::new);
-            case "dev.webfx.platform.audio.spi.AudioServiceProvider": return new ServiceLoader<S>(dev.webfx.kit.platform.audio.spi.impl.openjfxgwt.OpenJFXGwtAudioServiceProvider::new);
             case "dev.webfx.platform.boot.spi.ApplicationBooterProvider": return new ServiceLoader<S>(dev.webfx.platform.boot.spi.impl.gwt.GwtApplicationBooterProvider::new);
             case "dev.webfx.platform.boot.spi.ApplicationJob": return new ServiceLoader<S>();
             case "dev.webfx.platform.boot.spi.ApplicationModuleBooter": return new ServiceLoader<S>(dev.webfx.kit.launcher.WebFxKitLauncherModuleBooter::new, dev.webfx.kit.mapper.peers.javafxmedia.spi.gwt.GwtMediaModuleBooter::new, dev.webfx.platform.boot.spi.impl.ApplicationJobsBooter::new, dev.webfx.platform.resource.spi.impl.gwt.GwtResourceModuleBooter::new);

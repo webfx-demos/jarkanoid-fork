@@ -3,9 +3,9 @@
 module webfx.demo.jarkanoid.application.openjfx {
 
     // Direct dependencies modules
+    requires javafx.media;
     requires webfx.demo.jarkanoid.application;
     requires webfx.kit.openjfx;
-    requires webfx.kit.platform.audio.openjfx.gwt;
     requires webfx.kit.platform.visibility.openjfx;
     requires webfx.platform.boot.java;
     requires webfx.platform.console.java;

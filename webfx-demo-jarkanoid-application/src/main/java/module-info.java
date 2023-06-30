@@ -6,9 +6,9 @@ module webfx.demo.jarkanoid.application {
     requires java.base;
     requires javafx.base;
     requires javafx.graphics;
+    requires javafx.media;
     requires webfx.extras.scalepane;
     requires webfx.kit.util.scene;
-    requires webfx.platform.audio;
     requires webfx.platform.resource;
     requires webfx.platform.scheduler;
     requires webfx.platform.shutdown;

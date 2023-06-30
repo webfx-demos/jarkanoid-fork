@@ -2,8 +2,6 @@ package eu.hansolo.fx.jarkanoid;
 
 import dev.webfx.extras.scalepane.ScalePane;
 import dev.webfx.kit.util.scene.DeviceSceneUtil;
-import dev.webfx.platform.audio.Audio;
-import dev.webfx.platform.audio.AudioService;
 import dev.webfx.platform.resource.Resource;
 import dev.webfx.platform.scheduler.Scheduler;
 import dev.webfx.platform.shutdown.Shutdown;
@@ -25,6 +23,9 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
+import javafx.scene.media.AudioClip;
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.ImagePattern;
 import javafx.scene.text.Font;
@@ -171,14 +172,14 @@ public class Main extends Application {
     private Image                    blockShadowImg;
     private Image                    bonusBlockShadowImg;
     private Image                    explosionMapImg;
-    private Audio                    gameStartSnd;
-    private Audio                    startLevelSnd;
-    private Audio                    ballPaddleSnd;
-    private Audio                    ballBlockSnd;
-    private Audio                    ballHardBlockSnd;
-    private Audio                    laserSnd;
-    private Audio                    explosionSnd;
-    private Audio                    gameOverSnd;
+    private MediaPlayer              gameStartSnd;
+    private MediaPlayer              startLevelSnd;
+    private AudioClip                ballPaddleSnd;
+    private AudioClip                ballBlockSnd;
+    private AudioClip                ballHardBlockSnd;
+    private AudioClip                laserSnd;
+    private AudioClip                explosionSnd;
+    private MediaPlayer              gameOverSnd;
     private Paddle                   paddle;
     private List<Ball>               balls;
     private List<Block>              blocks;
@@ -440,7 +441,7 @@ public class Main extends Application {
             } else {
                 // Block for the first 8 seconds to give it some time to play the game start song
                 if (IS_BROWSER || Instant.now().getEpochSecond() - gameStartTime.getEpochSecond() > 8) {
-                    level = 1;
+                    int level = 1;
                     String queryString = WindowLocation.getQueryString();
                     if (queryString != null && queryString.startsWith("level="))
                         level = Integer.parseInt(queryString.substring(6));
@@ -474,7 +475,7 @@ public class Main extends Application {
         loadSounds();
 
         if (!IS_BROWSER)
-            playSound(gameStartSnd);
+            playMusic(gameStartSnd);
     }
 
     @Override public void stop() {
@@ -544,12 +545,12 @@ public class Main extends Application {
         gameOverSnd      = loadMusic(Resource.toUrl("game_over.mp3", getClass()));
     }
 
-    private Audio loadMusic(String url) {
-        return AudioService.loadMusic(url);
+    private MediaPlayer loadMusic(String url) {
+        return new MediaPlayer(new Media(url));
     }
 
-    private Audio loadSound(String url) {
-        return AudioService.loadSound(url);
+    private AudioClip loadSound(String url) {
+        return new AudioClip(url);
     }
 
     private static double clamp(final double min, final double max, final double value) {
@@ -604,9 +605,14 @@ public class Main extends Application {
 
 
     // Play audio clips
-    private void playSound(final Audio audioClip) {
+    private void playSound(final AudioClip audioClip) {
         if (audioClip != null)
             audioClip.play();
+    }
+
+    private void playMusic(final MediaPlayer music) {
+        if (music != null)
+            music.play();
     }
 
 
@@ -636,6 +642,7 @@ public class Main extends Application {
 
     // Start Level
     private void startLevel(final int level) {
+        this.level = level > Constants.LEVEL_MAP.size() ? 1 : level;
         levelStartTime     = Instant.now().getEpochSecond();
         blockCounter       = 0;
         nextLevelDoorAlpha = 1.0;
@@ -647,15 +654,15 @@ public class Main extends Application {
         paddle.x           = WIDTH * 0.5 - paddleState.width * 0.5;
         paddle.bounds.minX = paddle.x - paddle.width * 0.5;
         readyLevelVisible  = true;
-        playSound(startLevelSnd);
-        setupBlocks(level);
+        playMusic(startLevelSnd);
+        setupBlocks(this.level);
         bonusBlocks.clear();
         balls.clear();
         enemies.clear();
         explosions.clear();
         spawnBall();
         if (!running) { running = true; }
-        drawBackground(level);
+        drawBackground(this.level);
         drawBorder();
         updateAndDraw();
         schedule(() -> { readyLevelVisible = false; }, 2, TimeUnit.SECONDS);
@@ -672,7 +679,7 @@ public class Main extends Application {
         schedule(() -> startScreen(), 5, TimeUnit.SECONDS);
 
         gameOverTime = Instant.now().getEpochSecond();
-        playSound(gameOverSnd);
+        playMusic(gameOverSnd);
 
         running = false;
         balls.clear();
@@ -966,9 +973,7 @@ public class Main extends Application {
 
         // Check for level completeness
         if (blocks.isEmpty() || blocks.stream().filter(block -> block.maxHits > -1).count() == 0) {
-            level++;
-            if (level > Constants.LEVEL_MAP.size()) { level = 1; }
-            startLevel(level);
+            startLevel(level + 1);
         }
     }
 
