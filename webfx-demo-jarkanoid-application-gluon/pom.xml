@@ -142,7 +142,7 @@
                     <resourcesList>
                         <list>dev/webfx/platform/meta/exe/[^/]+$</list>
                         <list>eu/hansolo/fx/jarkanoid/[^/]+$</list>
-                        <list>images/checkbox/[^/]+$</list>
+                        <list>javafx/scene/control/skin/checkbox/[^/]+$</list>
                     </resourcesList>
                     <appIdentifier>dev.webfx.demo.jarkanoid</appIdentifier>
                     <releaseConfiguration>

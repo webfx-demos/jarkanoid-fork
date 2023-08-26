@@ -21,7 +21,7 @@ module webfx.demo.jarkanoid.application.gluon {
     requires webfx.platform.windowhistory.java;
     requires webfx.platform.windowlocation.java;
 
-    // Meta Resource package
+    // Resources packages
     opens dev.webfx.platform.meta.exe;
 
 }
