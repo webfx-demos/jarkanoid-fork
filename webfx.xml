@@ -12,13 +12,5 @@
         <webfx-library artifact="dev.webfx:webfx-extras:0.1.0-SNAPSHOT"/> <!-- for ScalePane -->
     </required-libraries>
 
-<!--
-    <maven-pom-manual>
-        <properties>
-            <java.version>17</java.version>
-        </properties>
-    </maven-pom-manual>
--->
-
 
 </project>

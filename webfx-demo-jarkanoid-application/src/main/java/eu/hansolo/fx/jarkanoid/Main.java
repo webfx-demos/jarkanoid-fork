@@ -1,6 +1,5 @@
 package eu.hansolo.fx.jarkanoid;
 
-import dev.webfx.extras.panes.ScalePane;
 import dev.webfx.kit.util.scene.DeviceSceneUtil;
 import dev.webfx.platform.resource.Resource;
 import dev.webfx.platform.scheduler.Scheduler;

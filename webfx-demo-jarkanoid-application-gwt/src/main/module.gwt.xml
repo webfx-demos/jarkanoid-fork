@@ -82,10 +82,6 @@
     <source path="eu/hansolo/fx/jarkanoid"/>
     <resource path="eu/hansolo/fx/jarkanoid"/>
     <public includes="eu/hansolo/fx/jarkanoid/" path=""/>
-    <!--===============================< webfx-extras-panes >===============================-->
-    <source path="dev/webfx/extras/panes"/>
-    <!--==========================< webfx-extras-util-animation >===========================-->
-    <source path="dev/webfx/extras/util/animation"/>
     <!--=======================< webfx-kit-javafxgraphics-gwt-j2cl >========================-->
     <source path="dev/webfx/kit/launcher/spi/impl/gwt"/>
     <source path="dev/webfx/kit/mapper/spi/impl/gwt"/>
