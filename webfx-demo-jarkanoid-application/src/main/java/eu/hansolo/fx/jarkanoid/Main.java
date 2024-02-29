@@ -1,6 +1,6 @@
 package eu.hansolo.fx.jarkanoid;
 
-import dev.webfx.extras.scalepane.ScalePane;
+import dev.webfx.extras.panes.ScalePane;
 import dev.webfx.kit.util.scene.DeviceSceneUtil;
 import dev.webfx.platform.resource.Resource;
 import dev.webfx.platform.scheduler.Scheduler;
@@ -32,7 +32,7 @@ import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
 import javafx.stage.Stage;
 
-import java.time.Instant;
+//import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
@@ -104,7 +104,7 @@ public class Main extends Application {
 
     //private ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
 
-    private Instant                  gameStartTime;
+    private long                     gameStartTime;
     private long                     levelStartTime;
     private long                     ballLostTime;
     private long                     gameOverTime;
@@ -251,7 +251,7 @@ public class Main extends Application {
                     // 1 second check
                     if (now > lastOneSecondCheck + 1_000_000_000) {
                         // After 15 seconds in the level enemies will be spawned every 10 seconds if less 5 enemies in the game
-                        long levelPlayTime = Instant.now().getEpochSecond() - levelStartTime;
+                        long levelPlayTime = System.currentTimeMillis() / 1000 - levelStartTime;
                         if (levelPlayTime > 15 && enemies.size() < 5 && levelPlayTime % 10 == 0) {
                             enemySpawnPosition = RND.nextBoolean() ? Pos.TOP_LEFT : Pos.TOP_RIGHT;
                             switch(enemySpawnPosition) {
@@ -341,7 +341,7 @@ public class Main extends Application {
                         }
                     }
                 } else {
-                    if (!showStartHint && Instant.now().getEpochSecond() - gameStartTime.getEpochSecond() > 8) {
+                    if (!showStartHint && System.currentTimeMillis() / 1000 - gameStartTime > 8) {
                         showStartHint = true;
                         startScreen();
                     }
@@ -407,7 +407,7 @@ public class Main extends Application {
     }
 
     @Override public void start(final Stage stage) {
-        gameStartTime = Instant.now();
+        gameStartTime = System.currentTimeMillis() / 1000;
 
         final StackPane pane  = new StackPane(bkgCanvas, canvas, brdrCanvas);
         pane.setMaxSize(WIDTH, HEIGHT); // Necessary to scale up with ScalePane
@@ -433,14 +433,14 @@ public class Main extends Application {
                             stickyPaddle       = false;
                             balls.forEach(ball -> {
                                 ball.active        = true;
-                                ball.bornTimestamp = Instant.now().getEpochSecond();
+                                ball.bornTimestamp = System.currentTimeMillis() / 1000;
                             });
                         }
                     }
                 }
             } else {
                 // Block for the first 8 seconds to give it some time to play the game start song
-                if (IS_BROWSER || Instant.now().getEpochSecond() - gameStartTime.getEpochSecond() > 8) {
+                if (IS_BROWSER || System.currentTimeMillis() / 1000 - gameStartTime > 8) {
                     int level = 1;
                     String queryString = WindowLocation.getQueryString();
                     if (queryString != null && queryString.startsWith("level="))
@@ -458,7 +458,7 @@ public class Main extends Application {
         // Making mouse released doing the same as pressing space bar (makes more sense on release as the mouse players are dragging the paddle)
         scene.setOnMouseReleased(e -> {
             // But skipping hot moments to give the mouse players more time to (not accidentally) launch the ball, or have a break
-            if (Instant.now().getEpochSecond() >= Math.max(levelStartTime + 3, Math.max(ballLostTime + 2, gameOverTime + 4)))
+            if (System.currentTimeMillis() / 1000 >= Math.max(levelStartTime + 3, Math.max(ballLostTime + 2, gameOverTime + 4)))
                 scene.getOnKeyPressed().handle(new KeyEvent(KeyEvent.KEY_PRESSED, " ", " ", KeyCode.SPACE, e.isShiftDown(), e.isControlDown(), e.isAltDown(), e.isMetaDown()));
         });
 
@@ -643,7 +643,7 @@ public class Main extends Application {
     // Start Level
     private void startLevel(final int level) {
         this.level = level > Constants.LEVEL_MAP.size() ? 1 : level;
-        levelStartTime     = Instant.now().getEpochSecond();
+        levelStartTime     = System.currentTimeMillis() / 1000;
         blockCounter       = 0;
         nextLevelDoorAlpha = 1.0;
         nextLevelDoorOpen  = false;
@@ -678,7 +678,7 @@ public class Main extends Application {
     private void gameOver() {
         schedule(() -> startScreen(), 5, TimeUnit.SECONDS);
 
-        gameOverTime = Instant.now().getEpochSecond();
+        gameOverTime = System.currentTimeMillis() / 1000;
         playMusic(gameOverSnd);
 
         running = false;
@@ -1250,9 +1250,9 @@ public class Main extends Application {
 
         public boolean equals(final Block other) {
             return this.blockType == other.blockType &&
-                    this.x         == other.x &&
-                    this.y         == other.y &&
-                    this.value     == other.value;
+                   this.x         == other.x &&
+                   this.y         == other.y &&
+                   this.value     == other.value;
         }
     }
 
@@ -1302,12 +1302,12 @@ public class Main extends Application {
             super(image, paddle.bounds.centerX, paddle.bounds.minY - image.getHeight() * 0.5 - BALL_SPEED - 1, 0, -ballSpeed);
             this.vX            = vX;
             this.active        = active;
-            this.bornTimestamp = Instant.now().getEpochSecond();
+            this.bornTimestamp = System.currentTimeMillis() / 1000;
         }
         private Ball(final Image image, final double x, final double y, final double vX, final double vY) {
             super(image, x, y, vX, vY);
             this.active        = true;
-            this.bornTimestamp = Instant.now().getEpochSecond();
+            this.bornTimestamp = System.currentTimeMillis() / 1000;
         }
 
 
@@ -1345,7 +1345,7 @@ public class Main extends Application {
                     double fy1 = y1;
                     BallHit ballHit = Stream.concat(blocks.stream().filter(b -> !b.toBeRemoved).map(b -> b.bounds),  // Iterating over all block bounds
                                     Stream.concat(enemies.stream().filter(b -> !b.toBeRemoved).map(b -> b.bounds),   // and all enemies
-                                    Stream.concat(Arrays.stream(BORDER_BOUNDS), Stream.of(paddle.bounds))))          // together with the borders and paddle bounds (processed identically)
+                                            Stream.concat(Arrays.stream(BORDER_BOUNDS), Stream.of(paddle.bounds))))          // together with the borders and paddle bounds (processed identically)
                             .map(bounds -> bounds.computeBallHit(fx0, fy0, fx1, fy1, radius))        // computing a possible ball hit with the bounds (returns null if no hits)
                             .filter(Objects::nonNull)                                                // removing non-hits
                             // If that trajectory (x0, y0) -> (x1, y1) hits several blocks, we take the first hit block
@@ -1460,15 +1460,15 @@ public class Main extends Application {
                         final List<Block> items = blockFifo.getItems();
                         if (items.size() == 9) {
                             if (items.get(0).equals(items.get(6)) &&
-                                    items.get(1).equals(items.get(5)) &&
-                                    items.get(1).equals(items.get(7)) &&
-                                    items.get(2).equals(items.get(4)) &&
-                                    items.get(2).equals(items.get(8))) {
+                                items.get(1).equals(items.get(5)) &&
+                                items.get(1).equals(items.get(7)) &&
+                                items.get(2).equals(items.get(4)) &&
+                                items.get(2).equals(items.get(8))) {
                                 this.vX += 0.1;
                             } else if (items.get(0).equals(items.get(8)) &&
-                                    items.get(1).equals(items.get(7)) &&
-                                    items.get(2).equals(items.get(6)) &&
-                                    items.get(3).equals(items.get(5))) {
+                                       items.get(1).equals(items.get(7)) &&
+                                       items.get(2).equals(items.get(6)) &&
+                                       items.get(3).equals(items.get(5))) {
                                 this.vX += 0.1;
                             }
                         }
@@ -1482,7 +1482,7 @@ public class Main extends Application {
 
             if (this.bounds.maxY > HEIGHT || !Double.isFinite(this.bounds.maxY)) { // may happen sometimes that y computation returns NaN or Infinite
                 this.toBeRemoved = true;
-                ballLostTime     = Instant.now().getEpochSecond();
+                ballLostTime     = System.currentTimeMillis() / 1000;
             }
         }
     }
@@ -1732,7 +1732,7 @@ public class Main extends Application {
             }
             // If not, is the whole trajectory inside the bounds? (may happen with moving bounds such as paddle & ennemies)
             if (!hit && x0 >= minXr && x0 <= maxXr && y0 >= minYr && y0 <= maxYr
-                     && x1 >= minXr && x1 <= maxXr && y1 >= minYr && y1 <= maxYr) {
+                && x1 >= minXr && x1 <= maxXr && y1 >= minYr && y1 <= maxYr) {
                 hit = true; // Definitely hit that bounds since it is inside
                 // To determine what border has been hit, we will consider the distance between the ball and each border
                 double distanceToLeft = Math.min(x0 - minXr, x1 - minXr);
