@@ -83,8 +83,8 @@
     <resource path="eu/hansolo/fx/jarkanoid"/>
     <public includes="eu/hansolo/fx/jarkanoid/" path=""/>
     <!--=======================< webfx-kit-javafxgraphics-gwt-j2cl >========================-->
-    <source path="dev/webfx/kit/launcher/spi/impl/gwt"/>
-    <source path="dev/webfx/kit/mapper/spi/impl/gwt"/>
+    <source path="dev/webfx/kit/launcher/spi/impl/gwtj2cl"/>
+    <source path="dev/webfx/kit/mapper/spi/impl/gwtj2cl"/>
     <!--=========================< webfx-kit-javafxgraphics-peers >=========================-->
     <source path="dev/webfx/kit/mapper/peers/javafxgraphics"/>
     <source path="dev/webfx/kit/mapper/peers/javafxgraphics/markers"/>

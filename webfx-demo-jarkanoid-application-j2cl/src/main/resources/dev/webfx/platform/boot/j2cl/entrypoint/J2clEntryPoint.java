@@ -1,7 +1,6 @@
 package dev.webfx.platform.boot.j2cl.entrypoint;
 
 import dev.webfx.platform.boot.spi.impl.j2cl.J2clApplicationBooterProvider;
-
 import org.treblereel.j2cl.processors.annotations.GWT3EntryPoint;
 
 import static dev.webfx.platform.javabase.emul.j2cl.ServiceRegistry.*;
@@ -10,14 +9,19 @@ public final class J2clEntryPoint {
 
     @GWT3EntryPoint
     public void entryPoint() {
+        registerArrayConstructors();
         registerServiceProviders();
         new J2clApplicationBooterProvider().onModuleLoad();
     }
 
+    public static void registerArrayConstructors() {
+
+    }
+
     public static void registerServiceProviders() {
-        register(dev.webfx.kit.launcher.spi.WebFxKitLauncherProvider.class, dev.webfx.kit.launcher.spi.impl.gwt.GwtWebFxKitLauncherProvider::new);
+        register(dev.webfx.kit.launcher.spi.WebFxKitLauncherProvider.class, dev.webfx.kit.launcher.spi.impl.gwtj2cl.GwtJ2clWebFxKitLauncherProvider::new);
         register(dev.webfx.kit.mapper.peers.javafxmedia.spi.WebFxKitMediaMapperProvider.class, dev.webfx.kit.mapper.peers.javafxmedia.spi.gwtj2cl.GwtJ2clWebFxKitMediaMapperProvider::new);
-        register(dev.webfx.kit.mapper.spi.WebFxKitMapperProvider.class, dev.webfx.kit.mapper.spi.impl.gwt.GwtWebFxKitHtmlMapperProvider::new);
+        register(dev.webfx.kit.mapper.spi.WebFxKitMapperProvider.class, dev.webfx.kit.mapper.spi.impl.gwtj2cl.GwtJ2clWebFxKitHtmlMapperProvider::new);
         register(dev.webfx.platform.boot.spi.ApplicationBooterProvider.class, dev.webfx.platform.boot.spi.impl.j2cl.J2clApplicationBooterProvider::new);
         register(dev.webfx.platform.boot.spi.ApplicationJob.class);
         register(dev.webfx.platform.boot.spi.ApplicationModuleBooter.class, dev.webfx.kit.launcher.WebFxKitLauncherModuleBooter::new, dev.webfx.platform.boot.spi.impl.ApplicationJobsBooter::new, dev.webfx.platform.resource.spi.impl.j2cl.J2clResourceModuleBooter::new);
