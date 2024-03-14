@@ -26,19 +26,20 @@ name: Multi-OS builds
 on:
   push:
     branches: [ webfx ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        app: [{name: 'JArkanoid', module-token: 'webfx-demo-jarkanoid', gwt-token: 'webfx_demo_jarkanoid', gluon-token: 'WebFXDemoJarkanoid', web-push-branch: 'jarkanoid', android-package-name: 'dev.webfx.demo.jarkanoid', android-track: 'beta', ios-bundle-id: 'dev.webfx.demo.jarkanoid', version: '0.1.0-SNAPSHOT'}]
+        app: [{name: 'JArkanoid', module-token: 'webfx-demo-jarkanoid', gwt-token: 'webfx_demo_jarkanoid', gluon-token: 'WebFXDemoJarkanoid', gwt-push-branch: 'jarkanoid-gwt', j2cl-push-branch: 'jarkanoid', android-package-name: 'dev.webfx.demo.jarkanoid', android-track: 'beta', ios-bundle-id: 'dev.webfx.demo.jarkanoid', version: '0.1.0-SNAPSHOT'}]
         os-config:  [1, 2, 3, 4]
         include:
           - os-config: 1 # Generates builds 1) 2) 3) 4) & 5)
             os: ubuntu-latest
             # Note: 1) must run on Ubuntu because the GitHub push action (to update the web-build branch) works only on Ubuntu
-            web-artifact-suffix:           'Web.war'                            # build 1)
+            gwt-artifact-suffix:           'Web.war'                            # build 1)
             fatjar-artifact-suffix:        'Linux-x64-runnable.jar'             # build 2)
             jvm-deb-artifact-suffix:       'Linux-x64-jvm-package.deb'          # build 3)
             jvm-rpm-artifact-suffix:       'Linux-x64-jvm-package.rpm'          # build 4)
@@ -80,6 +81,8 @@ jobs:
       app-openjfx-module-dir:    ./${{ matrix.app.module-token }}-application-openjfx
       app-gwt-module-dir:        ./${{ matrix.app.module-token }}-application-gwt
       app-gwt-build-dir:         ./${{ matrix.app.module-token }}-application-gwt/target/${{ matrix.app.module-token }}-application-gwt-${{ matrix.app.version }}/${{ matrix.app.gwt-token }}_application_gwt
+      app-j2cl-module-dir:       ./${{ matrix.app.module-token }}-application-j2cl
+      app-j2cl-build-dir:        ./${{ matrix.app.module-token }}-application-j2cl/target/${{ matrix.app.module-token }}-application-j2cl-${{ matrix.app.version }}/${{ matrix.app.module-token }}-application-j2cl
       app-gluon-module-dir:      ./${{ matrix.app.module-token }}-application-gluon
       web-push-repository-name:  'webfx-netlify'
       web-push-repository-owner: 'webfx-project'
@@ -150,20 +153,26 @@ jobs:
       ##################################################################################################################
 
       # Building this repository with JDK 13+ (Java 11 target)
-      - name: Build this repository (no OpenJFX fat jar - no GWT build)
-        run: mvn -B -P '!gwt-compile,!openjfx-fatjar,!openjfx-desktop' install
+      - name: Build this repository
+        run: mvn -B install
         working-directory: ${{ env.app-repo-dir }}
 
-      # Building this repository with JDK 13+ (Java 11 target) including a GWT compilation (if required)
-      - if: matrix.web-artifact-suffix != null
-        name: Build this application (OpenJFX fat jar + GWT build)
-        run: mvn -B -P 'gwt-compile,openjfx-fatjar,openjfx-desktop' package
+      # Building GWT application (if required)
+      - if: matrix.gwt-artifact-suffix != null || matrix.app.gwt-push-branch != null && matrix.os-config == 1
+        name: Build GWT application
+        run: mvn -B -P gwt-compile package
         working-directory: ${{ env.app-parent-module-dir }}
 
-      # Or building this repository with JDK 13+ (Java 11 target) excluding a GWT compilation
-      - if: matrix.web-artifact-suffix == null
-        name: Build this application (OpenJFX fat jar - no GWT build)
-        run: mvn -B -P '!gwt-compile,openjfx-fatjar,openjfx-desktop' package
+      # Building J2CL application (if required)
+      - if: matrix.j2cl-artifact-suffix != null || matrix.app.j2cl-push-branch != null && matrix.os-config == 1
+        name: Build J2CL application
+        run: mvn -B -P j2cl package
+        working-directory: ${{ env.app-parent-module-dir }}
+
+      # Building OpenJFX fat jar and installers (if required)
+      - if: matrix.fatjar-artifact-suffix != null
+        name: Build OpenJFX fat jar and installers
+        run: mvn -B -P 'openjfx-fatjar,openjfx-desktop' package
         working-directory: ${{ env.app-parent-module-dir }}
 
 
@@ -171,8 +180,8 @@ jobs:
       #                        Updating the Web build branch (will update the live demo)                               #
       ##################################################################################################################
 
-      - if: matrix.web-artifact-suffix != null && env.API_GITHUB_TOKEN != ''
-        name: Push GWT build to ${{ matrix.app.web-push-branch }} branch
+      - if: matrix.os-config == 1 && matrix.app.gwt-push-branch != null && env.API_GITHUB_TOKEN != ''
+        name: Push GWT build to ${{ matrix.app.gwt-push-branch }} branch
         uses: cpina/github-action-push-to-another-repository@master
         env:
           API_TOKEN_GITHUB: ${{ env.API_GITHUB_TOKEN }}
@@ -180,10 +189,22 @@ jobs:
           source-directory: ${{ env.app-gwt-build-dir }}
           destination-repository-username: ${{ env.web-push-repository-owner }}
           destination-repository-name: ${{ env.web-push-repository-name }}
-          target-branch: ${{ matrix.app.web-push-branch }}
+          target-branch: ${{ matrix.app.gwt-push-branch }}
           destination-github-username: ${{ env.web-push-username }}
           user-email: ${{ env.web-push-email }}
 
+      - if: matrix.os-config == 1 && matrix.app.j2cl-push-branch != null && env.API_GITHUB_TOKEN != ''
+        name: Push J2CL build to ${{ matrix.app.j2cl-push-branch }} branch
+        uses: cpina/github-action-push-to-another-repository@master
+        env:
+          API_TOKEN_GITHUB: ${{ env.API_GITHUB_TOKEN }}
+        with:
+          source-directory: ${{ env.app-j2cl-build-dir }}
+          destination-repository-username: ${{ env.web-push-repository-owner }}
+          destination-repository-name: ${{ env.web-push-repository-name }}
+          target-branch: ${{ matrix.app.j2cl-push-branch }}
+          destination-github-username: ${{ env.web-push-username }}
+          user-email: ${{ env.web-push-email }}
 
       ##################################################################################################################
       #                                           Staging artifacts                                                    #
@@ -204,9 +225,9 @@ jobs:
       ##################################################################################################################
 
       # Staging 1)
-      - if: matrix.web-artifact-suffix != null
+      - if: matrix.gwt-artifact-suffix != null
         name: Copy Web archive to staging
-        run: cp ${{ env.app-gwt-module-dir }}/target/*.war staging/${{ env.app-name }}-${{ matrix.web-artifact-suffix }}
+        run: cp ${{ env.app-gwt-module-dir }}/target/*.war staging/${{ env.app-name }}-${{ matrix.gwt-artifact-suffix }}
 
       # Staging 2) | 7) | 11)
       - if: matrix.fatjar-artifact-suffix != null
@@ -295,10 +316,7 @@ jobs:
       # Gluon needs additional libraries on Linux
       - if: runner.os == 'Linux'
         name: Install libraries required for Gluon on Linux
-        run:  |
-          sudo apt update
-          sudo apt install libasound2-dev libavcodec-dev libavformat-dev libavutil-dev libgl-dev libgtk-3-dev libpango1.0-dev libxtst-dev
-      
+        run: sudo apt update; sudo apt install libasound2-dev libavcodec-dev libavformat-dev libavutil-dev libgl-dev libgtk-3-dev libpango1.0-dev libxtst-dev
 
       # Passing the Gluon License (if set)
       - if: env.GLUON_LICENSE != ''
