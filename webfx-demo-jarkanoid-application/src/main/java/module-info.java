@@ -3,7 +3,6 @@
 module webfx.demo.jarkanoid.application {
 
     // Direct dependencies modules
-    requires java.base;
     requires javafx.base;
     requires javafx.graphics;
     requires javafx.media;

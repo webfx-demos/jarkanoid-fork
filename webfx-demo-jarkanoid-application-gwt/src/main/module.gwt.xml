@@ -130,9 +130,6 @@
     <super-source includes="java/util/function/" path=""/>
     <super-source includes="java/util/regex/" path=""/>
     <super-source includes="netscape/javascript/" path=""/>
-    <!--=======================< webfx-platform-javabase-emul-j2cl >========================-->
-    <source path="dev/webfx/platform/j2cl"/>
-    <source path="dev/webfx/platform/javabase/emul/j2cl"/>
     <!--==============================< webfx-platform-meta >===============================-->
     <source path="dev/webfx/platform/meta"/>
     <!--===============================< webfx-platform-os >================================-->
