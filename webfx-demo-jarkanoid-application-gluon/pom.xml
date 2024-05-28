@@ -146,7 +146,6 @@
                         <!-- Android -->
                         <appLabel>JArkanoid</appLabel>
                     </releaseConfiguration>
-
                 </configuration>
             </plugin>
         </plugins>
