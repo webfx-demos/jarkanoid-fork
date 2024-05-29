@@ -39,18 +39,20 @@ jobs:
           - os-config: 1 # Generates builds 1) 2) 3) 4) & 5)
             os: ubuntu-latest
             # Note: 1) must run on Ubuntu because the GitHub push action (to update the web-build branch) works only on Ubuntu
-            gwt-artifact-suffix:           'Web.war'                            # build 1)
+            j2cl-artifact-suffix:          'Web.war'                            # build 1)
             fatjar-artifact-suffix:        'Linux-x64-runnable.jar'             # build 2)
             jvm-deb-artifact-suffix:       'Linux-x64-jvm-package.deb'          # build 3)
             jvm-rpm-artifact-suffix:       'Linux-x64-jvm-package.rpm'          # build 4)
             gluon-desktop-arch-token:      'x86_64-linux'                       # build 5)
             gluon-desktop-artifact-suffix: 'Linux-x64-native-runnable'          # build 5)
+            MVN:                           '/tmp/maven/apache-maven-3.8.8/bin/mvn'
 
           - os-config: 2 # Generates build 6) - Could be in os-config 1 but moved it a separate config to speed up (parallel run)
             os: ubuntu-latest
             gluon-android-arch-token:      'aarch64-android'                    # build 6)
             gluon-android-apk-suffix:      'Android-aarch64.apk'                # build 6)
             gluon-android-aab-suffix:      'Android-aarch64.aab'                # build 6)
+            MVN:                           '/tmp/maven/apache-maven-3.8.8/bin/mvn'
 
           - os-config: 3 # Generates builds 7) 8) 9) & 10)
             os: windows-latest
@@ -61,6 +63,7 @@ jobs:
             # Commented as getting error: Error running candle to generate wixobj
             # gluon-desktop-artifact-suffix: 'Windows-x64-native-runnable.exe'    # build 10)
             # msi-desktop-artifact-suffix:   'Windows-x64-jvm-installer.msi'      # build 9)
+            MVN:                           'mvn -D"javafx.platform"="win"'
 
           - os-config: 4 # Generates builds 11) 12) 13) 14) & 15)
             os: macos-latest
@@ -73,6 +76,7 @@ jobs:
             # Note: the iOS build needs the Apple certificate in secrets (the steps will be skipped otherwise)
             gluon-ios-arch-token:          'arm64-ios'                          # build 15)
             gluon-ios-artifact-suffix:     'iOS-arm64-native.ipa'               # build 15)
+            MVN:                           '/tmp/maven/apache-maven-3.8.8/bin/mvn'
 
     env:
       app-name:  ${{ matrix.app.name }}
@@ -118,14 +122,25 @@ jobs:
 
       # Set up the JDK (WebFX requires JDK13+ due to javac bugs in prior versions - otherwise JDK11+ should be enough in theory)
       - name: Set up JDK ${{ env.jdk-version }}
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: ${{ env.jdk-version }}
 
+      # Forcing Maven 3.8.8 because of a JavaFX issue with >= 3.9.7 and GluonFX Maven Plugin requires Maven 3.8.8
+      - if: runner.os != 'Windows'
+        name: Download and Install Maven 3.8.8
+        run: |
+          mkdir /tmp/download
+          mkdir /tmp/maven/
+          cd /tmp/download
+          curl -O https://dlcdn.apache.org/maven/maven-3/3.8.8/binaries/apache-maven-3.8.8-bin.tar.gz
+          tar -xzf apache-maven-3.8.8-bin.tar.gz -C /tmp/maven/
+          ${{ matrix.MVN }} -version
+
       # Checkout this repository
       - name: Checkout this repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: ${{ env.app-repo-dir }}
 
@@ -154,25 +169,25 @@ jobs:
 
       # Building this repository with JDK 13+ (Java 11 target)
       - name: Build this repository
-        run: mvn -B install
+        run: ${{ matrix.MVN }} -B install
         working-directory: ${{ env.app-repo-dir }}
 
       # Building GWT application (if required)
       - if: matrix.gwt-artifact-suffix != null || matrix.app.gwt-push-branch != null && matrix.os-config == 1
         name: Build GWT application
-        run: mvn -B -P gwt-compile package
+        run: ${{ matrix.MVN }} -B -P gwt-compile package
         working-directory: ${{ env.app-parent-module-dir }}
 
       # Building J2CL application (if required)
       - if: matrix.j2cl-artifact-suffix != null || matrix.app.j2cl-push-branch != null && matrix.os-config == 1
         name: Build J2CL application
-        run: mvn -B -P j2cl package
+        run: ${{ matrix.MVN }} -B -P j2cl package
         working-directory: ${{ env.app-parent-module-dir }}
 
       # Building OpenJFX fat jar and installers (if required)
       - if: matrix.fatjar-artifact-suffix != null
         name: Build OpenJFX fat jar and installers
-        run: mvn -B -P 'openjfx-fatjar,openjfx-desktop' package
+        run: ${{ matrix.MVN }} -B -P 'openjfx-fatjar,openjfx-desktop' package
         working-directory: ${{ env.app-parent-module-dir }}
 
 
@@ -229,6 +244,12 @@ jobs:
         name: Copy Web archive to staging
         run: cp ${{ env.app-gwt-module-dir }}/target/*.war staging/${{ env.app-name }}-${{ matrix.gwt-artifact-suffix }}
 
+      # Building J2CL application (if required)
+      - if: matrix.j2cl-artifact-suffix != null || matrix.app.j2cl-push-branch != null && matrix.os-config == 1
+        name: Build J2CL application
+        run: ${{ matrix.MVN }} -B -P j2cl package
+        working-directory: ${{ env.app-parent-module-dir }}
+
       # Staging 2) | 7) | 11)
       - if: matrix.fatjar-artifact-suffix != null
         name: Copy fat jar with OpenJFX to staging
@@ -272,7 +293,7 @@ jobs:
       - if: matrix.msi-desktop-artifact-suffix != null
         name: Create Windows Installer (msi)
         run: |
-          mvn -B javafx:jlink
+          ${{ matrix.MAVEN_BIN }}\mvn -B javafx:jlink
           ${{ env.JAVA_HOME }}\bin\jpackage --input .\target\ --name ${{ env.app-name }} --main-jar ${{ matrix.app.module-token }}-application-openjfx-${{ matrix.app.version }}.jar --main-class dev.webfx.platform.shared.services.boot.ApplicationBooter --type msi --runtime-image .\target\jlinkImage --app-version 0.0.0 --win-per-user-install --win-menu --win-menu-group WebFX
         working-directory: ${{ env.app-openjfx-module-dir }}
 
@@ -328,7 +349,7 @@ jobs:
       # Invoking the Gluon Client Maven plugin to build the native Desktop app (chaining build & package goals)
       - if: matrix.gluon-desktop-artifact-suffix != null
         name: Gluon Build for Desktop
-        run: mvn -B -P 'gluon-desktop' gluonfx:build gluonfx:package # May take a while
+        run: ${{ matrix.MVN }} -B -P 'gluon-desktop' gluonfx:build gluonfx:package # May take a while
         env:
           GRAALVM_HOME: ${{ env.JAVA_HOME }}
         working-directory: ${{ env.app-gluon-module-dir }}
@@ -375,7 +396,7 @@ jobs:
         name: Gluon Build for Android
         run: |
           export ANDROID_SDK=$ANDROID_HOME # Otherwise GluonFX 1.0.16 package task is failing
-          mvn -B -P 'gluon-android' clean gluonfx:build gluonfx:package # May take a while
+          ${{ matrix.MVN }} -B -P 'gluon-android' clean gluonfx:build gluonfx:package # May take a while
         env:
           GRAALVM_HOME: ${{ env.JAVA_HOME }}
           GLUON_ANDROID_KEYSTOREPATH: ${{ steps.android_keystore_file.outputs.filePath }}
@@ -432,7 +453,7 @@ jobs:
       # Invoking the Gluon Client Maven plugin to build the native iOS app (chaining build & package goals)
       - if: matrix.gluon-ios-arch-token != null && env.GLUON_IOS_CERTIFICATES_BASE64 != ''
         name: Gluon Build for iOS
-        run: mvn -B -P 'gluon-ios' clean gluonfx:build gluonfx:package # May take a while
+        run: ${{ matrix.MVN }} -B -P 'gluon-ios' clean gluonfx:build gluonfx:package # May take a while
         env:
           GRAALVM_HOME: ${{ env.JAVA_HOME }}
         working-directory: ${{ env.app-gluon-module-dir }}
