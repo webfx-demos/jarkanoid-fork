@@ -531,7 +531,7 @@ jobs:
       # Note: each asset will be a folder containing the artifacts
       - if: env.API_GITHUB_TOKEN != ''
         name: Download artifacts into staging directory
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           path: download
 
@@ -554,7 +554,7 @@ jobs:
       # Upload all artifacts into the SNAPSHOT release assets
       - if: env.API_GITHUB_TOKEN != ''
         name: Upload artifacts to the SNAPSHOT release assets
-        uses: AButler/upload-release-assets@v2.0
+        uses: AButler/upload-release-assets@v3.0
         with:
           release-tag: SNAPSHOT
           files: upload/*
