@@ -5,7 +5,6 @@ import dev.webfx.platform.resource.Resource;
 import dev.webfx.platform.scheduler.Scheduler;
 import dev.webfx.platform.shutdown.Shutdown;
 import dev.webfx.platform.useragent.UserAgent;
-import dev.webfx.platform.windowlocation.WindowLocation;
 import eu.hansolo.fx.jarkanoid.Constants.BlockType;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
@@ -21,19 +20,24 @@ import javafx.scene.image.Image;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.media.AudioClip;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.ImagePattern;
+import javafx.scene.shape.SVGPath;
 import javafx.scene.text.Font;
+import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
 import javafx.stage.Stage;
 
-//import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 
@@ -212,14 +216,14 @@ public class Main extends Application {
     private FIFO<Block>              blockFifo;
     private EventHandler<MouseEvent> mouseHandler;
     private double                   mousePaddleVx;
-
+    private HBox                     levelSelector;
 
     // ******************** Methods *******************************************
     @Override public void init() {
         running                  = false;
         paddleState              = PaddleState.STANDARD;
         highscore                = PropertyManager.INSTANCE.getLong(Constants.HIGHSCORE_KEY, 0);
-        level                    = 1;
+        level                    = (int) PropertyManager.INSTANCE.getLong(Constants.LEVEL_KEY, 1);
         blinks                   = new ArrayList<>();
         ballSpeed                = BALL_SPEED;
         readyLevelVisible        = false;
@@ -408,7 +412,23 @@ public class Main extends Application {
     @Override public void start(final Stage stage) {
         gameStartTime = System.currentTimeMillis() / 1000;
 
-        final StackPane pane  = new StackPane(bkgCanvas, canvas, brdrCanvas);
+        Text levelText = new Text();
+        levelText.setFont(SCORE_FONT);
+        levelText.setFill(Color.RED);
+        Consumer<Integer> levelChanger = l -> {
+            level = clamp(1, 32, l);
+            levelText.setText("Level " + level + (level < 10 ? "\u00A0" : ""));
+        };
+        levelChanger.accept(level);
+        Pane incrementButton = createSvgButton("M 10.419383,2.7920361 0.44372521,19.200594 c -0.82159289,1.471294 0.2330761,3.327162 1.95783919,3.327162 H 21.793496 c 1.716023,0 2.779433,-1.847128 1.95784,-3.327162 L 14.335061,2.7920361 c -0.847814,-1.5295618 -3.059123,-1.5295618 -3.915678,0 z",
+                () -> levelChanger.accept(level + 1));
+        Pane decrementButton = createSvgButton("M 10.322413,21.701054 0.34675429,5.2924958 c -0.8215929,-1.471294 0.2330761,-3.327162 1.95783921,-3.327162 H 21.696526 c 1.716023,0 2.779433,1.847127 1.95784,3.327162 L 14.238091,21.701054 c -0.847814,1.529561 -3.059123,1.529561 -3.915678,0 z",
+                () -> levelChanger.accept(level - 1));
+        VBox levelButtons = new VBox(5, incrementButton, decrementButton);
+        levelButtons.setMaxHeight(50);
+        levelSelector = new HBox(20, levelText, levelButtons);
+        levelSelector.setAlignment(Pos.CENTER);
+        final StackPane pane  = new StackPane(bkgCanvas, canvas, brdrCanvas, levelSelector);
         pane.setMaxSize(WIDTH, HEIGHT); // Necessary to scale up with ScalePane
         final Scene     scene = new Scene(new ScalePane(pane), WIDTH, HEIGHT, Color.BLACK);
 
@@ -440,10 +460,7 @@ public class Main extends Application {
             } else {
                 // Block for the first 8 seconds to give it some time to play the game start song
                 if (IS_BROWSER || System.currentTimeMillis() / 1000 - gameStartTime > 8) {
-                    int level = 1;
-                    String queryString = WindowLocation.getQueryString();
-                    if (queryString != null && queryString.startsWith("level="))
-                        level = Integer.parseInt(queryString.substring(6));
+                    levelSelector.setVisible(false);
                     startLevel(level);
                 }
             }
@@ -475,6 +492,8 @@ public class Main extends Application {
 
         if (!IS_BROWSER)
             playMusic(gameStartSnd);
+
+        Shutdown.addShutdownHook(PropertyManager.INSTANCE::storeProperties);
     }
 
     @Override public void stop() {
@@ -636,12 +655,14 @@ public class Main extends Application {
         ctx.clearRect(0, 0, WIDTH, HEIGHT);
         drawBackground(1);
         drawBorder();
+        levelSelector.setVisible(true);
     }
 
 
     // Start Level
     private void startLevel(final int level) {
         this.level = level > Constants.LEVEL_MAP.size() ? 1 : level;
+        PropertyManager.INSTANCE.setLong(Constants.LEVEL_KEY, this.level);
         levelStartTime     = System.currentTimeMillis() / 1000;
         blockCounter       = 0;
         nextLevelDoorAlpha = 1.0;
@@ -664,7 +685,7 @@ public class Main extends Application {
         drawBackground(this.level);
         drawBorder();
         updateAndDraw();
-        schedule(() -> { readyLevelVisible = false; }, 2, TimeUnit.SECONDS);
+        schedule(() -> readyLevelVisible = false, 2, TimeUnit.SECONDS);
     }
 
     private void schedule(Runnable runnable, long delay, TimeUnit timeUnit) {
@@ -1786,8 +1807,31 @@ public class Main extends Application {
         public BallHit(Bounds hitBounds) {
             this.hitBounds = hitBounds;
         }
+
     }
 
+    private static Pane createSvgButton(String content, Runnable clickRunnable) {
+        SVGPath path = new SVGPath();
+        path.setContent(content);
+        path.setFill(Color.RED);
+        // We now embed the svg path in a pane. The reason is for a better click experience. Because in JavaFX (not in
+        // the browser), the clicking area is only the filled shape, not the empty space in that shape. So when clicking
+        // on a gear icon on a mobile for example, even if globally our finger covers the icon, the final click point
+        // may be in this empty space, making the button not reacting, leading to a frustrating experience.
+        Pane pane = new Pane(path); // Will act as the mouse click area covering the entire surface
+        // The pane needs to be reduced to the svg path size (which we can get using the layout bounds).
+        path.sceneProperty().addListener(p -> { // This postpone is necessary only when running in the browser, not in standard JavaFX
+            javafx.geometry.Bounds b = path.getLayoutBounds(); // Bounds computation should be correct now even in the browser
+            pane.setMinSize(b.getWidth(), b.getHeight());
+            pane.setMaxSize(b.getWidth(), b.getHeight());
+        });
+        pane.setCursor(Cursor.HAND);
+        pane.setOnMouseReleased(e -> {
+            clickRunnable.run();
+            e.consume();
+        });
+        return pane;
+    }
 
     // ******************** Start *********************************************
     public static void main(String[] args) {

@@ -16,6 +16,5 @@ module webfx.demo.jarkanoid.application.openjfx {
     requires webfx.platform.storage.java;
     requires webfx.platform.storagelocation.java;
     requires webfx.platform.useragent.java.client;
-    requires webfx.platform.windowlocation.java;
 
 }

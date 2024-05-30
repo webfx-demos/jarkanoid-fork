@@ -12,7 +12,6 @@ module webfx.demo.jarkanoid.application {
     requires webfx.platform.shutdown;
     requires webfx.platform.storage;
     requires webfx.platform.useragent;
-    requires webfx.platform.windowlocation;
 
     // Exported packages
     exports eu.hansolo.fx.jarkanoid;

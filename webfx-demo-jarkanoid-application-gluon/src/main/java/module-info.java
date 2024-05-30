@@ -17,6 +17,5 @@ module webfx.demo.jarkanoid.application.gluon {
     requires webfx.platform.storagelocation.gluon;
     requires webfx.platform.useragent.gluon;
     requires webfx.platform.visibility.gluon;
-    requires webfx.platform.windowlocation.java;
 
 }
