@@ -3,7 +3,7 @@
 
     <exported-packages>
         <source-packages/>
-        <resource-package>eu.hansolo.fx.jarkanoid</resource-package>
+        <resource-packages/>
     </exported-packages>
 
     <dependencies>

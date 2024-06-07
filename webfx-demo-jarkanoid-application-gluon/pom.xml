@@ -125,6 +125,7 @@
                         <list>dev/webfx/platform/conf/[^/]+$</list>
                         <list>dev/webfx/platform/meta/exe/[^/]+$</list>
                         <list>eu/hansolo/fx/jarkanoid/[^/]+$</list>
+                        <list>eu/hansolo/fx/jarkanoid/thumbs/[^/]+$</list>
                         <list>javafx/scene/control/skin/checkbox/[^/]+$</list>
                     </resourcesList>
                     <appIdentifier>dev.webfx.demo.jarkanoid</appIdentifier>

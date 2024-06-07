@@ -20,10 +20,7 @@ import javafx.scene.image.Image;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Pane;
-import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import javafx.scene.media.AudioClip;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
@@ -50,8 +47,8 @@ public class Main extends Application {
         WIDE(120, 22),
         LASER(80, 22);
 
-        protected final double width;
-        protected final double height;
+        private final double width;
+        private final double height;
 
         PaddleState(final double width, final double height) {
             this.width  = width;
@@ -68,12 +65,12 @@ public class Main extends Application {
         BONUS_P;  // Additional life (gray)
     }
     private enum EnemyType {
-        MOLECULE;
+        MOLECULE
     }
 
     private static final Random      RND                  = new Random();
-    private static final double      WIDTH                = 560;
-    private static final double      HEIGHT               = 740;
+    public static final double       WIDTH                = 560;
+    public static final double       HEIGHT               = 740;
     private static final double      INSET                = 22;
     private static final double      UPPER_INSET          = 85;
     private static final double      PADDLE_OFFSET_Y      = 68;
@@ -216,7 +213,8 @@ public class Main extends Application {
     private FIFO<Block>              blockFifo;
     private EventHandler<MouseEvent> mouseHandler;
     private double                   mousePaddleVx;
-    private HBox                     levelSelector;
+    private BorderPane levelBox;
+    private final LevelSelector      levelSelector = new LevelSelector(this::startLevel);
 
     // ******************** Methods *******************************************
     @Override public void init() {
@@ -290,7 +288,7 @@ public class Main extends Application {
                     // Animate bonus blocks and top doors
                     if (now > lastBonusAnimCall + 50_000_000) {
                         // Update bonus blocks
-                        bonusBlocks.forEach(bonusBlock -> bonusBlock.update());
+                        bonusBlocks.forEach(BonusBlock::update);
 
                         // Fade out top doors
                         if (topLeftDoorAlpha < 1) {
@@ -313,8 +311,8 @@ public class Main extends Application {
 
                     // Animate enemies
                     if (now > lastEnemyUpdateCall + 100_000_000) {
-                        enemies.forEach(enemy -> enemy.update());
-                        explosions.forEach(explosion -> explosion.update());
+                        enemies.forEach(Enemy::update);
+                        explosions.forEach(Explosion::update);
                         lastEnemyUpdateCall = now;
                     }
 
@@ -417,18 +415,25 @@ public class Main extends Application {
         levelText.setFill(Color.RED);
         Consumer<Integer> levelChanger = l -> {
             level = clamp(1, 32, l);
-            levelText.setText("Level " + level + (level < 10 ? "\u00A0" : ""));
+            levelText.setText("Level " + level);
         };
         levelChanger.accept(level);
+        levelSelector.setVisible(false);
+        Pane selectorButton = createSvgButton("M2 4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4zm10 0a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2V4zm10 0a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2V4zM2 14a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-4zm10 0a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-4zm10 0a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-4zM2 24a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-4zm10 0a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-4zm10 0a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-4z",
+                () -> levelSelector.setVisible(true));
         Pane incrementButton = createSvgButton("M 10.419383,2.7920361 0.44372521,19.200594 c -0.82159289,1.471294 0.2330761,3.327162 1.95783919,3.327162 H 21.793496 c 1.716023,0 2.779433,-1.847128 1.95784,-3.327162 L 14.335061,2.7920361 c -0.847814,-1.5295618 -3.059123,-1.5295618 -3.915678,0 z",
                 () -> levelChanger.accept(level + 1));
         Pane decrementButton = createSvgButton("M 10.322413,21.701054 0.34675429,5.2924958 c -0.8215929,-1.471294 0.2330761,-3.327162 1.95783921,-3.327162 H 21.696526 c 1.716023,0 2.779433,1.847127 1.95784,3.327162 L 14.238091,21.701054 c -0.847814,1.529561 -3.059123,1.529561 -3.915678,0 z",
                 () -> levelChanger.accept(level - 1));
         VBox levelButtons = new VBox(5, incrementButton, decrementButton);
         levelButtons.setMaxHeight(50);
-        levelSelector = new HBox(20, levelText, levelButtons);
-        levelSelector.setAlignment(Pos.CENTER);
-        final StackPane pane  = new StackPane(bkgCanvas, canvas, brdrCanvas, levelSelector);
+        levelBox = new BorderPane(levelText);
+        levelBox.setLeft(selectorButton);
+        levelBox.setRight(levelButtons);
+        levelBox.setMaxWidth(270);
+        BorderPane.setAlignment(selectorButton, Pos.CENTER);
+        BorderPane.setAlignment(levelButtons, Pos.CENTER);
+        final StackPane pane  = new StackPane(bkgCanvas, canvas, brdrCanvas, levelBox, levelSelector);
         pane.setMaxSize(WIDTH, HEIGHT); // Necessary to scale up with ScalePane
         final Scene     scene = new Scene(new ScalePane(pane), WIDTH, HEIGHT, Color.BLACK);
 
@@ -460,7 +465,6 @@ public class Main extends Application {
             } else {
                 // Block for the first 8 seconds to give it some time to play the game start song
                 if (IS_BROWSER || System.currentTimeMillis() / 1000 - gameStartTime > 8) {
-                    levelSelector.setVisible(false);
                     startLevel(level);
                 }
             }
@@ -616,7 +620,7 @@ public class Main extends Application {
     private void stopPaddle() { paddle.vX = 0; }
 
     private void fire(final double x) {
-        if (torpedoes.size() > 0) { return; }
+        if (!torpedoes.isEmpty()) { return; }
         torpedoes.add(new Torpedo(torpedoImg, x, HEIGHT - 50));
         playSound(laserSnd);
     }
@@ -645,7 +649,7 @@ public class Main extends Application {
 
     // Re-Spawn Ball
     private void spawnBall() {
-        if (balls.size() > 0) { return; }
+        if (!balls.isEmpty()) { return; }
         balls.add(new Ball(ballImg, paddle.bounds.centerX, paddle.bounds.minY - ballImg.getHeight() * 0.5 - 1, (RND.nextDouble() * (2 * ballSpeed) - ballSpeed)));
     }
 
@@ -655,7 +659,7 @@ public class Main extends Application {
         ctx.clearRect(0, 0, WIDTH, HEIGHT);
         drawBackground(1);
         drawBorder();
-        levelSelector.setVisible(true);
+        levelBox.setVisible(true);
     }
 
 
@@ -663,6 +667,8 @@ public class Main extends Application {
     private void startLevel(final int level) {
         this.level = level > Constants.LEVEL_MAP.size() ? 1 : level;
         PropertyManager.INSTANCE.setLong(Constants.LEVEL_KEY, this.level);
+        levelBox.setVisible(false);
+        levelSelector.setVisible(false);
         levelStartTime     = System.currentTimeMillis() / 1000;
         blockCounter       = 0;
         nextLevelDoorAlpha = 1.0;
@@ -696,7 +702,7 @@ public class Main extends Application {
 
     // Game Over
     private void gameOver() {
-        schedule(() -> startScreen(), 5, TimeUnit.SECONDS);
+        schedule(this::startScreen, 5, TimeUnit.SECONDS);
 
         gameOverTime = System.currentTimeMillis() / 1000;
         playMusic(gameOverSnd);
@@ -956,9 +962,9 @@ public class Main extends Application {
         ctx.setTextAlign(TextAlignment.CENTER);
         ctx.fillText("HIGH SCORE", WIDTH * 0.5, IS_BROWSER ? 5 : 0); // Adding 5px in browser otherwise looks cut
         ctx.setFill(SCORE_WHITE);
-        ctx.fillText(Long.toString(score > highscore ? score : highscore), WIDTH * 0.5, IS_BROWSER ? 35: 30);
+        ctx.fillText(Long.toString(Math.max(score, highscore)), WIDTH * 0.5, IS_BROWSER ? 35: 30);
 
-        // Draw no of lifes
+        // Draw no of lives
         for (int i = 0 ; i < noOfLifes ; i++) {
             ctx.drawImage(paddleMiniImg, INSET + 2 + 42 * i, HEIGHT - 30);
         }
@@ -989,10 +995,10 @@ public class Main extends Application {
         }
 
         // Update blinks
-        blinks.forEach(blink -> blink.update());
+        blinks.forEach(Blink::update);
 
         // Check for level completeness
-        if (blocks.isEmpty() || blocks.stream().filter(block -> block.maxHits > -1).count() == 0) {
+        if (blocks.isEmpty() || blocks.stream().noneMatch(block -> block.maxHits > -1)) {
             startLevel(level + 1);
         }
     }
@@ -1099,7 +1105,7 @@ public class Main extends Application {
             this.vR          = vR;
             this.width       = null == image ? 0 : image.getWidth();
             this.height      = null == image ? 0 : image.getHeight();
-            this.size        = this.width > this.height ? width : height;
+            this.size        = Math.max(this.width, this.height);
             this.radius      = this.size * 0.5;
             this.toBeRemoved = false;
             this.bounds      = null == image ? new Bounds(0, 0, 0, 0) : new Bounds(x - image.getWidth() * 0.5, y - image.getHeight() * 0.5, image.getWidth(), image.getHeight());
@@ -1147,7 +1153,7 @@ public class Main extends Application {
             countX++;
             if (countX == maxFrameX) {
                 countY++;
-                if (countX == maxFrameX && countY == maxFrameY) {
+                if (countY == maxFrameY) {
                     toBeRemoved = true;
                 }
                 countX = 0;
@@ -1220,7 +1226,7 @@ public class Main extends Application {
             countX++;
             if (countX == maxFrameX) {
                 countY++;
-                if (countX == maxFrameX && countY == maxFrameY) {
+                if (countY == maxFrameY) {
                     toBeRemoved = true;
                 }
                 countX = 0;
@@ -1256,7 +1262,7 @@ public class Main extends Application {
 
         // ******************** Methods *******************************************
         @Override protected void init() {
-            size   = width > height ? width : height;
+            size   = Math.max(width, height);
             radius = size * 0.5;
 
             // Velocity
@@ -1266,7 +1272,7 @@ public class Main extends Application {
 
         @Override public void update() { }
 
-        @Override public String toString() { return new StringBuilder().append(blockType).append("(").append(x).append(",").append(y).append(")").toString(); }
+        @Override public String toString() { return blockType + "(" + x + "," + y + ")"; }
 
         public boolean equals(final Block other) {
             return this.blockType == other.blockType &&
@@ -1452,7 +1458,7 @@ public class Main extends Application {
                             case GRAY: {
                                 hitBlock.hits++;
                                 if (hitBlock.hits == hitBlock.maxHits) {
-                                    score += level * 50;
+                                    score += level * 50L;
                                     blockCounter += 1;
                                     hitBlock.toBeRemoved = true;
                                     playSound(ballBlockSnd);
@@ -1549,7 +1555,7 @@ public class Main extends Application {
 
     private class Enemy extends AnimatedSprite {
         public EnemyType enemyType;
-        private double initialVx;
+        private final double initialVx;
 
 
         // ******************** Constructors **************************************
@@ -1646,7 +1652,7 @@ public class Main extends Application {
             countX++;
             if (countX == maxFrameX) {
                 countY++;
-                if (countX == maxFrameX && countY == maxFrameY) {
+                if (countY == maxFrameY) {
                     toBeRemoved = true;
                 }
                 countX = 0;

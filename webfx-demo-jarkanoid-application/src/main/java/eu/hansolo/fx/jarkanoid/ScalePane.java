@@ -1,6 +1,7 @@
 package eu.hansolo.fx.jarkanoid;
 
 import javafx.geometry.HPos;
+import javafx.geometry.Insets;
 import javafx.geometry.VPos;
 import javafx.scene.Node;
 import javafx.scene.layout.Pane;
@@ -86,8 +87,9 @@ public class ScalePane extends Pane {
     protected void layoutChildren() {
         if (node == null)
             return;
-        double width = getWidth();
-        double height = getHeight();
+        Insets insets = getInsets();
+        double width = getWidth() - insets.getLeft() - insets.getRight();
+        double height = getHeight() - insets.getTop() - insets.getBottom();
         scale = 1;
         if (scaleEnabled) {
             boolean tryRescale = !node.isResizable() || alwaysTry;
@@ -106,6 +108,6 @@ public class ScalePane extends Pane {
         }
         node.setScaleX(canScaleX ? scale : 1);
         node.setScaleY(canScaleY ? scale : 1);
-        layoutInArea(node, 0, 0, width, height, 0, HPos.CENTER, VPos.CENTER);
+        layoutInArea(node, insets.getLeft(), insets.getTop(), width, height, 0, HPos.CENTER, VPos.CENTER);
     }
 }

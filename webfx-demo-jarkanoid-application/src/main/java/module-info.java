@@ -18,6 +18,7 @@ module webfx.demo.jarkanoid.application {
 
     // Resources packages
     opens eu.hansolo.fx.jarkanoid;
+    opens eu.hansolo.fx.jarkanoid.thumbs;
 
     // Provided services
     provides javafx.application.Application with eu.hansolo.fx.jarkanoid.Main;

@@ -134,7 +134,7 @@
                                             <groupId>dev.webfx</groupId>
                                             <artifactId>webfx-demo-jarkanoid-application</artifactId>
                                             <version>0.1.0-SNAPSHOT</version>
-                                            <includes>eu/hansolo/fx/jarkanoid/</includes>
+                                            <includes>eu/hansolo/fx/jarkanoid/ , eu/hansolo/fx/jarkanoid/thumbs/</includes>
                                         </artifactItem>
                                     </artifactItems>
                                     <excludes>**/*.java,**/*.class</excludes>
