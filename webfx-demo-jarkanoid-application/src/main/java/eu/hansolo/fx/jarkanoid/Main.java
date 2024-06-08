@@ -416,6 +416,7 @@ public class Main extends Application {
         Consumer<Integer> levelChanger = l -> {
             level = clamp(1, 32, l);
             levelText.setText("Level " + level);
+            PropertyManager.INSTANCE.setLong(Constants.LEVEL_KEY, this.level);
         };
         levelChanger.accept(level);
         levelSelector.setVisible(false);
