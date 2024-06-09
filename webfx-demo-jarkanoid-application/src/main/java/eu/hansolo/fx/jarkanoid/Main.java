@@ -213,8 +213,8 @@ public class Main extends Application {
     private FIFO<Block>              blockFifo;
     private EventHandler<MouseEvent> mouseHandler;
     private double                   mousePaddleVx;
-    private BorderPane levelBox;
-    private final LevelSelector      levelSelector = new LevelSelector(this::startLevel);
+    private BorderPane               levelBox;
+    private LevelSelector            levelSelector;
 
     // ******************** Methods *******************************************
     @Override public void init() {
@@ -419,9 +419,6 @@ public class Main extends Application {
             PropertyManager.INSTANCE.setLong(Constants.LEVEL_KEY, this.level);
         };
         levelChanger.accept(level);
-        levelSelector.setVisible(false);
-        Pane selectorButton = createSvgButton("M2 4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4zm10 0a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2V4zm10 0a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2V4zM2 14a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-4zm10 0a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-4zm10 0a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-4zM2 24a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-4zm10 0a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-4zm10 0a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-4z",
-                () -> levelSelector.setVisible(true));
         Pane incrementButton = createSvgButton("M 10.419383,2.7920361 0.44372521,19.200594 c -0.82159289,1.471294 0.2330761,3.327162 1.95783919,3.327162 H 21.793496 c 1.716023,0 2.779433,-1.847128 1.95784,-3.327162 L 14.335061,2.7920361 c -0.847814,-1.5295618 -3.059123,-1.5295618 -3.915678,0 z",
                 () -> levelChanger.accept(level + 1));
         Pane decrementButton = createSvgButton("M 10.322413,21.701054 0.34675429,5.2924958 c -0.8215929,-1.471294 0.2330761,-3.327162 1.95783921,-3.327162 H 21.696526 c 1.716023,0 2.779433,1.847127 1.95784,3.327162 L 14.238091,21.701054 c -0.847814,1.529561 -3.059123,1.529561 -3.915678,0 z",
@@ -429,14 +426,22 @@ public class Main extends Application {
         VBox levelButtons = new VBox(5, incrementButton, decrementButton);
         levelButtons.setMaxHeight(50);
         levelBox = new BorderPane(levelText);
-        levelBox.setLeft(selectorButton);
         levelBox.setRight(levelButtons);
         levelBox.setMaxWidth(270);
-        BorderPane.setAlignment(selectorButton, Pos.CENTER);
         BorderPane.setAlignment(levelButtons, Pos.CENTER);
-        final StackPane pane  = new StackPane(bkgCanvas, canvas, brdrCanvas, levelBox, levelSelector);
-        pane.setMaxSize(WIDTH, HEIGHT); // Necessary to scale up with ScalePane
-        final Scene     scene = new Scene(new ScalePane(pane), WIDTH, HEIGHT, Color.BLACK);
+        StackPane unscaledPane = new StackPane(bkgCanvas, canvas, brdrCanvas, levelBox);
+        unscaledPane.setMaxSize(WIDTH, HEIGHT); // Necessary to scale up with ScalePane
+        Scene scene = new Scene(new ScalePane(unscaledPane), WIDTH, HEIGHT, Color.BLACK);
+        Pane selectorButton = createSvgButton("M2 4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4zm10 0a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2V4zm10 0a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2V4zM2 14a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-4zm10 0a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-4zm10 0a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-4zM2 24a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-4zm10 0a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-4zm10 0a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-4z",
+                () -> {
+                    if (levelSelector == null) {
+                        levelSelector = new LevelSelector(this::startLevel);
+                        unscaledPane.getChildren().add(levelSelector);
+                    }
+                    levelSelector.setVisible(true);
+                });
+        levelBox.setLeft(selectorButton);
+        BorderPane.setAlignment(selectorButton, Pos.CENTER);
 
         scene.setOnKeyPressed(e -> {
             if (running) {
@@ -669,7 +674,8 @@ public class Main extends Application {
         this.level = level > Constants.LEVEL_MAP.size() ? 1 : level;
         PropertyManager.INSTANCE.setLong(Constants.LEVEL_KEY, this.level);
         levelBox.setVisible(false);
-        levelSelector.setVisible(false);
+        if (levelSelector != null)
+            levelSelector.setVisible(false);
         levelStartTime     = System.currentTimeMillis() / 1000;
         blockCounter       = 0;
         nextLevelDoorAlpha = 1.0;
